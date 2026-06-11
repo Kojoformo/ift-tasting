@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Formo · IFT FIRST 2026 Barista Milk Tasting</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans, system-ui, sans-serif); background: var(--color-background-primary, #fff); }
+
+  /* ── Sync strip ── */
+  #sync-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: var(--color-background-secondary, #f5f5f3);
+    border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.1));
+    font-size: 12px;
+    color: var(--color-text-tertiary, #999);
+    gap: 10px;
+  }
+  .sync-indicator { display: flex; align-items: center; gap: 6px; }
+  .sync-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    background: var(--color-text-tertiary, #ccc);
+  }
+  .sync-dot.pending { background: #E09B3D; animation: sdpulse 1.4s ease-in-out infinite; }
+  .sync-dot.ok      { background: #3D9E5A; }
+  @keyframes sdpulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  #strip-sync-btn {
+    background: none;
+    border: 0.5px solid var(--color-border-secondary, rgba(0,0,0,0.2));
+    border-radius: 6px; padding: 4px 10px; font-size: 11px; font-family: inherit;
+    color: var(--color-text-secondary, #555); cursor: pointer; white-space: nowrap;
+    transition: opacity .15s;
+  }
+  #strip-sync-btn:disabled { opacity: .4; cursor: default; }
+
+  /* ── Offline banner ── */
+  #offline-banner {
+    display: none;
+    background: #FEF3E2;
+    border-bottom: 0.5px solid #F0D9A8;
+    padding: 7px 20px;
+    font-size: 12px;
+    color: #7A5C1E;
+    text-align: center;
+  }
+  #offline-banner.show { display: block; }
+
+  /* ── Original app styles — untouched ── */
+  .app { min-height: 600px; display: flex; flex-direction: column; padding: 0; }
+
+  .screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 580px; padding: 2rem; animation: fadeIn 0.3s ease; }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .home-logo { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 2rem; font-weight: 500; }
+  .home-title { font-size: 32px; font-weight: 500; color: var(--color-text-primary); text-align: center; line-height: 1.2; margin-bottom: 0.5rem; }
+  .home-sub { font-size: 16px; color: var(--color-text-secondary); text-align: center; margin-bottom: 3rem; }
+  .home-divider { width: 40px; height: 1px; background: var(--color-border-secondary); margin: 1.5rem auto; }
+
+  .cta-btn { background: var(--color-text-primary); color: var(--color-background-primary); border: none; border-radius: var(--border-radius-lg, 12px); padding: 18px 48px; font-size: 17px; font-weight: 500; cursor: pointer; letter-spacing: 0.01em; transition: opacity 0.15s; }
+  .cta-btn:active { opacity: 0.75; transform: scale(0.98); }
+
+  .step-header { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 1rem; font-weight: 500; align-self: flex-start; width: 100%; max-width: 480px; }
+  .step-question { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2rem; align-self: flex-start; width: 100%; max-width: 480px; line-height: 1.3; }
+
+  .rating-grid { display: flex; gap: 12px; margin-bottom: 2.5rem; }
+  .rating-btn { width: 72px; height: 72px; border-radius: var(--border-radius-lg, 12px); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); font-size: 24px; font-weight: 500; cursor: pointer; color: var(--color-text-primary); transition: all 0.15s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .rating-btn .label { font-size: 9px; font-weight: 400; color: var(--color-text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .rating-btn:active { transform: scale(0.96); }
+  .rating-btn.selected { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+  .rating-btn.selected .label { color: var(--color-background-secondary); }
+
+  .chips-section { width: 100%; max-width: 480px; margin-bottom: 1.5rem; }
+  .chips-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin-bottom: 10px; font-weight: 500; }
+  .chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1.5px solid #1A1714;
+    background: transparent;
+    font-size: 15px;
+    cursor: pointer;
+    color: #1A1714;
+    transition: all 0.15s;
+    font-weight: 400;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .chip:active { transform: scale(0.97); }
+  .chip.pos.selected { background: #3B6D11; border-color: #3B6D11; color: #fff; }
+  .chip.neg.selected { background: #C4381A; border-color: #C4381A; color: #fff; }
+
+  .open-input { width: 100%; max-width: 480px; border: 1.5px solid #1A1714; border-radius: 12px; padding: 14px 16px; font-size: 15px; font-family: inherit; color: #1A1714; background: #fff; resize: none; min-height: 120px; margin-bottom: 1.5rem; outline: none; transition: border-color 0.15s; }
+  .open-input:focus { border-color: #555; }
+  .open-input::placeholder { color: #aaa; }
+
+  .nav-row { display: flex; gap: 12px; width: 100%; max-width: 480px; }
+  .back-btn { padding: 16px 24px; border-radius: var(--border-radius-lg, 12px); border: 0.5px solid var(--color-border-secondary); background: transparent; font-size: 15px; cursor: pointer; color: var(--color-text-secondary); transition: all 0.15s; }
+  .next-btn { flex: 1; padding: 16px; border-radius: var(--border-radius-lg, 12px); border: none; background: var(--color-text-primary); color: var(--color-background-primary); font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .next-btn:disabled { opacity: 0.35; cursor: default; }
+  .next-btn:not(:disabled):active { opacity: 0.8; }
+
+  .progress-bar { width: 100%; max-width: 480px; height: 2px; background: var(--color-border-tertiary); border-radius: 2px; margin-bottom: 2.5rem; align-self: flex-start; }
+  .progress-fill { height: 100%; background: var(--color-text-primary); border-radius: 2px; transition: width 0.4s ease; }
+
+  .thanks-icon { font-size: 48px; margin-bottom: 1.5rem; }
+  .thanks-title { font-size: 28px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 0.75rem; }
+  .thanks-sub { font-size: 16px; color: var(--color-text-secondary); margin-bottom: 0.5rem; }
+  .thanks-reset { font-size: 14px; color: var(--color-text-tertiary); }
+
+  .error-msg { font-size: 13px; color: #C4602A; margin-top: 8px; text-align: center; }
+  .booth-tag { font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.08em; margin-top: 3rem; text-transform: uppercase; }
+
+  /* ── Setup screen ── */
+  #screen-setup { background: #fff; }
+  .setup-title { font-size: 22px; font-weight: 500; color: #1A1714; margin-bottom: 8px; text-align: center; }
+  .setup-sub { font-size: 15px; color: #777; margin-bottom: 32px; text-align: center; line-height: 1.5; }
+  .setup-field { width: 100%; max-width: 420px; margin-bottom: 16px; }
+  .setup-field label { display: block; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 8px; }
+  .setup-field input { width: 100%; padding: 14px 16px; border: 1.5px solid #1A1714; border-radius: 12px; font-size: 15px; font-family: inherit; color: #1A1714; background: #fff; outline: none; }
+  .setup-field input::placeholder { color: #bbb; }
+  .setup-field input:focus { border-color: #555; }
+  .setup-save-btn { width: 100%; max-width: 420px; padding: 16px; background: #1A1714; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 500; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+  .setup-save-btn:disabled { opacity: 0.35; cursor: default; }
+  .setup-save-btn:active { opacity: 0.8; }
+  .setup-error { font-size: 13px; color: #C4602A; margin-top: 10px; text-align: center; min-height: 18px; }
+  .setup-lock { font-size: 11px; color: #bbb; margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- Sync strip -->
+<div id="sync-strip">
+  <div class="sync-indicator">
+    <span class="sync-dot" id="sync-dot"></span>
+    <span id="sync-text">Ready</span>
+  </div>
+  <button id="strip-sync-btn" onclick="manualSync()" disabled>Sync now</button>
+</div>
+
+<!-- Offline banner -->
+<div id="offline-banner">📶 Offline — responses are saving locally and will sync when reconnected</div>
+
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Formo barista milk tasting survey for IFT FIRST 2026</h2>
+
+<!-- Setup screen (shown once if no token saved) -->
+<div id="screen-setup" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:2rem;">
+  <div style="font-size:28px; margin-bottom:20px;">🔑</div>
+  <div class="setup-title">One-time setup</div>
+  <div class="setup-sub">Paste your Notion token below.<br>Saved on this device only — never uploaded anywhere.</div>
+  <div class="setup-field">
+    <label>Notion integration token</label>
+    <input type="password" id="setup-token" placeholder="ntn_…" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <button class="setup-save-btn" id="setup-save-btn" onclick="saveSetup()" disabled>Save and open app →</button>
+  <div class="setup-error" id="setup-error"></div>
+  <div class="setup-lock">🔒 Stored locally on this iPad only</div>
+</div>
+
+<div class="app">
+
+  <div class="screen active" id="screen-home">
+    <div class="home-logo">Formo · IFT FIRST 2026</div>
+    <div class="home-title">Just tried our<br>barista milk?</div>
+    <div class="home-divider"></div>
+    <div class="home-sub">Share your honest reaction.<br>Takes 30 seconds.</div>
+    <button class="cta-btn" onclick="goto('rating')">Start tasting note →</button>
+    <div class="booth-tag">Booth ST81 · Startup Pavilion</div>
+  </div>
+
+  <div class="screen" id="screen-rating">
+    <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+    <div class="step-header">Step 1 of 3</div>
+    <div class="step-question">How much did you enjoy it?</div>
+    <div class="rating-grid">
+      <button class="rating-btn" onclick="setRating(1)" id="r1"><span>1</span><span class="label">Nope</span></button>
+      <button class="rating-btn" onclick="setRating(2)" id="r2"><span>2</span><span class="label">Meh</span></button>
+      <button class="rating-btn" onclick="setRating(3)" id="r3"><span>3</span><span class="label">OK</span></button>
+      <button class="rating-btn" onclick="setRating(4)" id="r4"><span>4</span><span class="label">Good</span></button>
+      <button class="rating-btn" onclick="setRating(5)" id="r5"><span>5</span><span class="label">Love it</span></button>
+    </div>
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('home')">← Back</button>
+      <button class="next-btn" id="next-rating" disabled onclick="goto('keywords')">Continue</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-keywords">
+    <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+    <div class="step-header">Step 2 of 3</div>
+    <div class="step-question">What words come to mind?</div>
+    <div class="chips-section">
+      <div class="chips-label">What you liked</div>
+      <div class="chips-row" id="pos-chips"></div>
+    </div>
+    <div class="chips-section">
+      <div class="chips-label">What could be better</div>
+      <div class="chips-row" id="neg-chips"></div>
+    </div>
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('rating')">← Back</button>
+      <button class="next-btn" onclick="goto('open')">Continue</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-open">
+    <div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
+    <div class="step-header">Step 3 of 3</div>
+    <div class="step-question">Anything else to add?</div>
+    <textarea class="open-input" id="open-text" placeholder="Optional — any other thoughts…" rows="3"></textarea>
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('keywords')">← Back</button>
+      <button class="next-btn" id="submit-btn" onclick="submitForm()">Submit →</button>
+    </div>
+    <div class="error-msg" id="error-msg" style="display:none">Could not save — please try again.</div>
+  </div>
+
+  <div class="screen" id="screen-thanks">
+    <div class="thanks-icon">✓</div>
+    <div class="thanks-title">Thank you!</div>
+    <div class="thanks-sub">Your feedback has been recorded.</div>
+    <div class="thanks-reset" id="reset-countdown">Resetting in 5s…</div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const DATABASE_ID    = 'a9d83226-48e1-4b25-8982-24b2a6118861';
+const NOTION_API     = 'https://api.notion.com/v1/pages';
+const NOTION_VER     = '2022-06-28';
+const QUEUE_KEY      = 'ift_tasting_queue';
+const SYNC_TS_KEY    = 'ift_last_sync';
+const TOKEN_KEY      = 'ift_notion_token';
+
+const POS_CHIPS = ['Creamy','Smooth','Rich','Frothy','Clean taste','Neutral','Good texture','Milky'];
+const NEG_CHIPS = ['Too thin','Bland','Aftertaste','Too sweet','Too thick','Watery'];
+
+let state = { rating: null, pos: new Set(), neg: new Set() };
+let respondentCount = 1;
+let syncRunning = false;
+
+// ── Setup screen ──────────────────────────────────────────────
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+
+function initApp() {
+  const token = getToken();
+  if (!token) {
+    // Show setup screen
+    document.getElementById('screen-setup').style.display = 'flex';
+    document.querySelector('.app').style.display = 'none';
+    document.getElementById('sync-strip').style.display = 'none';
+    document.getElementById('offline-banner').style.display = 'none';
+    const inp = document.getElementById('setup-token');
+    inp.addEventListener('input', () => {
+      document.getElementById('setup-save-btn').disabled = inp.value.trim().length < 10;
+    });
+  } else {
+    document.getElementById('screen-setup').style.display = 'none';
+    document.querySelector('.app').style.display = 'flex';
+    handleConnectivity();
+    updateSyncStrip();
+  }
+}
+
+async function saveSetup() {
+  const token = document.getElementById('setup-token').value.trim();
+  const errEl = document.getElementById('setup-error');
+  const btn   = document.getElementById('setup-save-btn');
+  errEl.textContent = '';
+
+  if (!token.startsWith('ntn_') && !token.startsWith('secret_')) {
+    errEl.textContent = 'Token should start with ntn_ — check and try again';
+    return;
+  }
+
+  localStorage.setItem(TOKEN_KEY, token);
+  btn.textContent = 'Saved!';
+  setTimeout(() => {
+    document.getElementById('screen-setup').style.display = 'none';
+    document.querySelector('.app').style.display = 'flex';
+    document.getElementById('sync-strip').style.display = 'flex';
+    handleConnectivity();
+    updateSyncStrip();
+  }, 400);
+}
+
+// ── Queue helpers ─────────────────────────────────────────────
+function getQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+
+function enqueue(entry) {
+  const q = getQueue();
+  q.push({ ...entry, _id: Date.now() + '-' + Math.random().toString(36).slice(2), _pending: true });
+  saveQueue(q);
+  updateSyncStrip();
+}
+
+// ── Sync strip ────────────────────────────────────────────────
+function updateSyncStrip() {
+  const pending = getQueue().filter(r => r._pending).length;
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  const btn = document.getElementById('strip-sync-btn');
+
+  if (!navigator.onLine) {
+    dot.className = 'sync-dot pending';
+    txt.textContent = pending > 0 ? pending + ' waiting (offline)' : 'Offline';
+    btn.disabled = true;
+  } else if (pending > 0) {
+    dot.className = 'sync-dot pending';
+    txt.textContent = pending + ' pending';
+    btn.disabled = false;
+  } else {
+    dot.className = 'sync-dot ok';
+    const ts = localStorage.getItem(SYNC_TS_KEY);
+    txt.textContent = ts ? 'Synced ' + ts : 'All synced';
+    btn.disabled = true;
+  }
+}
+
+// ── Notion push ───────────────────────────────────────────────
+async function pushToNotion(entry) {
+  const props = {
+    'Respondent': { title: [{ text: { content: entry.respondent } }] }
+  };
+  if (entry.rating != null) props['Rating'] = { number: entry.rating };
+  if (entry.pos.length)     props['Positive Keywords'] = { multi_select: entry.pos.map(n => ({ name: n })) };
+  if (entry.neg.length)     props['Negative Keywords'] = { multi_select: entry.neg.map(n => ({ name: n })) };
+  if (entry.openFeedback)   props['Open Feedback'] = { rich_text: [{ text: { content: entry.openFeedback } }] };
+
+  const res = await fetch(NOTION_API, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + getToken(),
+      'Notion-Version': NOTION_VER,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ parent: { database_id: DATABASE_ID }, properties: props })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'HTTP ' + res.status);
+  }
+}
+
+// ── Flush queue ───────────────────────────────────────────────
+async function flushQueue() {
+  if (!navigator.onLine || syncRunning || !getToken()) return;
+  const q = getQueue();
+  const pending = q.filter(r => r._pending);
+  if (!pending.length) return;
+
+  syncRunning = true;
+  let synced = 0;
+
+  for (const entry of pending) {
+    try {
+      await pushToNotion(entry);
+      entry._pending = false;
+      synced++;
+    } catch (e) {
+      console.warn('Sync failed for', entry._id, e.message);
+    }
+  }
+
+  saveQueue(q);
+  syncRunning = false;
+
+  if (synced > 0) {
+    localStorage.setItem(SYNC_TS_KEY,
+      new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }
+  updateSyncStrip();
+}
+
+async function manualSync() {
+  const btn = document.getElementById('strip-sync-btn');
+  btn.textContent = 'Syncing…';
+  btn.disabled = true;
+  await flushQueue();
+  updateSyncStrip();
+  btn.textContent = 'Sync now';
+}
+
+// ── Connectivity ──────────────────────────────────────────────
+function handleConnectivity() {
+  document.getElementById('offline-banner').classList.toggle('show', !navigator.onLine);
+  updateSyncStrip();
+  if (navigator.onLine) flushQueue();
+}
+window.addEventListener('online',  handleConnectivity);
+window.addEventListener('offline', handleConnectivity);
+setInterval(() => { if (navigator.onLine) flushQueue(); }, 30000);
+
+// ── Chips ─────────────────────────────────────────────────────
+function buildChips() {
+  document.getElementById('pos-chips').innerHTML =
+    POS_CHIPS.map(w => `<button class="chip pos ${state.pos.has(w)?'selected':''}" onclick="toggleChip('pos','${w}',this)">${w}</button>`).join('');
+  document.getElementById('neg-chips').innerHTML =
+    NEG_CHIPS.map(w => `<button class="chip neg ${state.neg.has(w)?'selected':''}" onclick="toggleChip('neg','${w}',this)">${w}</button>`).join('');
+}
+
+function toggleChip(type, word, el) {
+  const set = type === 'pos' ? state.pos : state.neg;
+  if (set.has(word)) { set.delete(word); el.classList.remove('selected'); }
+  else               { set.add(word);    el.classList.add('selected'); }
+}
+
+function setRating(n) {
+  state.rating = n;
+  [1,2,3,4,5].forEach(i => document.getElementById('r'+i).classList.toggle('selected', i === n));
+  document.getElementById('next-rating').disabled = false;
+}
+
+function goto(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  if (screen === 'keywords') buildChips();
+}
+
+// ── Submit ────────────────────────────────────────────────────
+async function submitForm() {
+  const btn   = document.getElementById('submit-btn');
+  const errEl = document.getElementById('error-msg');
+  errEl.style.display = 'none';
+  btn.disabled    = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    enqueue({
+      respondent:   'Respondent #' + respondentCount,
+      rating:       state.rating,
+      pos:          [...state.pos],
+      neg:          [...state.neg],
+      openFeedback: document.getElementById('open-text').value.trim()
+    });
+  } catch(e) {
+    errEl.style.display = 'block';
+    btn.disabled    = false;
+    btn.textContent = 'Submit →';
+    return;
+  }
+
+  respondentCount++;
+  goto('thanks');
+  btn.disabled    = false;
+  btn.textContent = 'Submit →';
+
+  let count = 5;
+  const cd = document.getElementById('reset-countdown');
+  const timer = setInterval(() => {
+    count--;
+    cd.textContent = 'Resetting in ' + count + 's…';
+    if (count <= 0) {
+      clearInterval(timer);
+      state = { rating: null, pos: new Set(), neg: new Set() };
+      document.getElementById('open-text').value = '';
+      document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('next-rating').disabled = true;
+      cd.textContent = 'Resetting in 5s…';
+      goto('home');
+    }
+  }, 1000);
+
+  flushQueue();
+}
+
+// ── Init ──────────────────────────────────────────────────────
+initApp();
+</script>
+</body>
+</html>
