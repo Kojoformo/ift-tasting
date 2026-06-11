@@ -231,7 +231,8 @@
 <script>
 // ── Config ────────────────────────────────────────────────────
 const DATABASE_ID    = 'a9d83226-48e1-4b25-8982-24b2a6118861';
-const NOTION_API     = 'https://api.notion.com/v1/pages';
+const NOTION_API     = 'https://corsproxy.io/?https://api.notion.com/v1/pages';
+const NOTION_CHECK   = 'https://corsproxy.io/?https://api.notion.com/v1/databases/';
 const NOTION_VER     = '2022-06-28';
 const QUEUE_KEY      = 'ift_tasting_queue';
 const SYNC_TS_KEY    = 'ift_last_sync';
@@ -277,7 +278,7 @@ async function saveSetup() {
 
   // Quick test call to verify token works
   try {
-    const res = await fetch('https://api.notion.com/v1/databases/' + DATABASE_ID, {
+    const res = await fetch(NOTION_CHECK + DATABASE_ID, {
       headers: { 'Authorization': 'Bearer ' + token, 'Notion-Version': NOTION_VER }
     });
     if (res.status === 401 || res.status === 403) throw new Error('Token not authorised');
